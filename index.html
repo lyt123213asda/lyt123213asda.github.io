@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>教师信息管理系统</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    // 兼容：部分环境/浏览器可能屏蔽某个CDN，提供双CDN兜底加载
+    (function () {
+      function load(src, onOk, onErr) {
+        var s = document.createElement("script");
+        s.src = src;
+        s.defer = true;
+        s.onload = onOk;
+        s.onerror = onErr;
+        document.head.appendChild(s);
+      }
+
+      load(
+        "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+        function () {},
+        function () {
+          load(
+            "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js",
+            function () {},
+            function () {
+              console.error("XLSX库加载失败：两个CDN都不可用。");
+            }
+          );
+        }
+      );
+    })();
+  </script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>教师信息管理系统</h1>
+    <p>统计上课情况，自动计算教师工资</p>
+  </header>
+
+  <main class="app-main">
+    <!-- （已移除：教师管理 / 上课记录 / Excel 课表导入模块） -->
+
+    <!-- 分年级按天课程统计（初中/高中老师） -->
+    <section class="card">
+      <h2>分年级按天课程统计</h2>
+      <p class="section-tip">
+        用“初中老师课程统计_按时间段年级分行.xlsx”和“高中老师课程统计_按时间段年级分行.xlsx”
+        两个表，自动统计各年级老师周一至周五上午/下午的课时。
+      </p>
+      <div class="timetable-upload">
+        <input
+          type="file"
+          id="gradeStatsFiles"
+          accept=".xls,.xlsx"
+          multiple
+        />
+        <button id="importGradeStatsBtn" class="btn primary">
+          导入初中/高中老师课程统计表
+        </button>
+        <button id="clearGradeStatsBtn" class="btn danger">
+          清空已导入的统计数据
+        </button>
+      </div>
+
+      <div class="grade-filter-bar">
+        <div class="form-group">
+          <label for="gradeSelectForStats">选择年级</label>
+          <select id="gradeSelectForStats">
+            <option value="">请选择年级</option>
+            <option value="__JUNIOR__">初中（初一-初三）总计</option>
+            <option value="__SENIOR__">高中（高一-高三）总计</option>
+            <option value="__ALL__">全年级（初一-高三）总计</option>
+            <option value="初一">初一</option>
+            <option value="初二">初二</option>
+            <option value="初三">初三</option>
+            <option value="高一">高一</option>
+            <option value="高二">高二</option>
+            <option value="高三">高三</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>选择统计的日期与时段</label>
+          <span style="font-size: 12px; color: #6b7280;"
+            >每一行只选一个：上午 / 下午 / 全天，不选则该天不统计。</span
+          >
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="day-options-table">
+          <thead>
+            <tr>
+              <th>星期</th>
+              <th>上午</th>
+              <th>下午</th>
+              <th>全天</th>
+              <th>不统计</th>
+            </tr>
+          </thead>
+          <tbody id="gradeDayOptionsBody">
+            <tr data-weekday="1">
+              <td>周一</td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-1-mode"
+                    value="am"
+                  />上午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-1-mode"
+                    value="pm"
+                  />下午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-1-mode"
+                    value="all"
+                  />全天
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-1-mode"
+                    value=""
+                    checked
+                  />不统计
+                </label>
+              </td>
+            </tr>
+            <tr data-weekday="2">
+              <td>周二</td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-2-mode"
+                    value="am"
+                  />上午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-2-mode"
+                    value="pm"
+                  />下午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-2-mode"
+                    value="all"
+                  />全天
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-2-mode"
+                    value=""
+                    checked
+                  />不统计
+                </label>
+              </td>
+            </tr>
+            <tr data-weekday="3">
+              <td>周三</td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-3-mode"
+                    value="am"
+                  />上午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-3-mode"
+                    value="pm"
+                  />下午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-3-mode"
+                    value="all"
+                  />全天
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-3-mode"
+                    value=""
+                    checked
+                  />不统计
+                </label>
+              </td>
+            </tr>
+            <tr data-weekday="4">
+              <td>周四</td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-4-mode"
+                    value="am"
+                  />上午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-4-mode"
+                    value="pm"
+                  />下午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-4-mode"
+                    value="all"
+                  />全天
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-4-mode"
+                    value=""
+                    checked
+                  />不统计
+                </label>
+              </td>
+            </tr>
+            <tr data-weekday="5">
+              <td>周五</td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-5-mode"
+                    value="am"
+                  />上午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-5-mode"
+                    value="pm"
+                  />下午
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-5-mode"
+                    value="all"
+                  />全天
+                </label>
+              </td>
+              <td>
+                <label class="day-option">
+                  <input
+                    type="radio"
+                    name="day-5-mode"
+                    value=""
+                    checked
+                  />不统计
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-actions" style="margin-top: 10px;">
+        <button id="calcGradeStatsBtn" class="btn primary">
+          统计该年级老师课时
+        </button>
+        <button id="exportGradeStatsBtn" class="btn">
+          导出统计结果（Excel）
+        </button>
+      </div>
+
+      <div id="gradeStatsResult" class="salary-result">
+        请选择年级和统计的日期时段，然后点击“统计该年级老师课时”。
+      </div>
+
+      <div class="table-wrapper" style="margin-top: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>教师</th>
+              <th>总节数</th>
+              <th>周一</th>
+              <th>周二</th>
+              <th>周三</th>
+              <th>周四</th>
+              <th>周五</th>
+            </tr>
+          </thead>
+          <tbody id="gradeStatsTableBody">
+            <tr>
+              <td colspan="7" style="text-align:center;color:#9ca3af;">
+                暂无统计结果。
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- （已移除：工资统计模块） -->
+  </main>
+
+  <footer class="app-footer">
+    <small>数据保存在浏览器本地（localStorage），刷新页面不会丢失。</small>
+  </footer>
+</body>
+</html>
